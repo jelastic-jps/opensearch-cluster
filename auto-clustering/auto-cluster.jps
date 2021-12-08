@@ -1,0 +1,219 @@
+jpsType: update
+jpsVersion: '1.9.1'
+name: OpenSearch Stack
+id: opensearch
+logo: /images/logo.png
+
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/
+
+targetNodes: none
+nodeGroupAlias:
+  ${settings.nodeGroup}: nosqldb
+  
+description: 
+  text:  OpenSearch stack with OpenSearch Dashboards and Logstash
+  short: OpenSearch stack
+  
+globals:
+  oSearchPswd: ${fn.password}
+  oDashPswd: ${fn.password}
+  lstashPswd: ${fn.password}
+  oSearchConfig: /etc/opensearch/opensearch.yml
+  oSearchDashConfig: /etc/opensearch-dashboards/opensearch_dashboards.yml
+  lstashPipelineConfig: /etc/logstash/conf.d/logstash-sample.conf
+  
+onInstall:
+  - clusterInit
+  - if ('${settings.success_email}' != 'false'):
+    - return:
+        type: success
+        message: /text/success.md
+        email: /text/success.md
+      
+onAfterServiceScaleOut[lstash]:
+  - setLogstashPassword
+  
+onAfterRedeployContainer[lstash]:
+  - if (!${event.params.useExistingVolumes:true}):
+    - setLogstashPassword
+    - cmd[lstash]: |-
+        sed -ci -e 's/hosts => .*/hosts =>  ["${nodes.nosqldb.master.address}"]/g' ${globals.lstashPipelineConfig};
+    - forEach(osnode:nodes.nosqldb):
+      - if (${@osnode.id} != ${nodes.nosqldb.master.id}):
+        - cmd[lstash]: |-
+            sed -ci -e 's/hosts =>  \[/hosts =>  \[\"${this.nodeAddress}\",/' ${globals.lstashPipelineConfig};
+    
+onAfterRedeployContainer[odash]:
+  - setCapabilities
+  - if (!${event.params.useExistingVolumes:true}):
+      - setKibanaserverPassword
+      - addOSearchNodesToOSearchDashboard
+  
+onAfterRedeployContainer[nosqldb]:
+  - setGlobals:
+      initialized: "false"
+  - if (!${event.params.useExistingVolumes:true}):
+      - if (nodes.nosqldb.length == 1): clusterInit
+      - else:
+        - forEach(osnode:nodes.nosqldb):
+          - cmd[${@osnode.id}]: bash /root/checkClusterInit.sh
+            user: root
+          - if (${response.out} == true):
+              - setGlobals:
+                  initialized: true
+        - if (globals.initialized == true):
+          - forEach(osnode:nodes.nosqldb):
+            - cmd[${@osnode.id}]: bash /root/checkClusterInit.sh
+              user: root
+            - if (${response.out} == false):
+                - reAddNodeToCluster:
+                    nodeId: ${@osnode.id}
+        - else: clusterInit
+
+onAfterMigrate:
+  - fixClusterAfterCloneOrMigration
+ 
+onAfterClone:
+  - fixClusterAfterCloneOrMigration
+  
+onAfterServiceScaleOut[nosqldb]:
+- forEach(osnode:event.response.nodes):
+    addNodeToCluster:
+      nodeId: ${@osnode.id}
+      nodeAddress: ${@osnode.address}
+- api[nosqldb]: environment.control.RestartNodesByGroup
+
+onBeforeScaleIn[nosqldb]:
+- forEach(osnode:event.response.nodes):
+    - removeNodeFromCluster:
+        nodeAddress: ${@osnode.address}
+    - if ('${settings.is_opensearchdashboards}' == 'true'):
+        - cmd[odash]: |-
+            sed -ci -e '/- https:\/\/${@osnode.address}:9200/d' ${globals.oSearchDashConfig}
+        - api[odash]: environment.control.RestartNodesByGroup
+    - if ('${settings.is_logstash}' == 'true'):
+        - cmd[lstash]: |-
+            sed -ci -e 's/[,]*"${this.nodeAddress}"[,]*//' ${globals.lstashPipelineConfig}; 
+            sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig}; 
+        - api[lstash]: environment.control.RestartNodesByGroup
+- api[nosqldb]: environment.control.RestartNodesByGroup
+
+actions:
+
+  clusterInit:
+    - cmd[nosqldb]: |-
+        sudo service opensearch stop;
+        sed -ci -e 's/^discovery.seed_hosts:.*/discovery.seed_hosts: ["${nodes.nosqldb.master.address}"]/g' ${globals.oSearchConfig};
+    - cmd[${nodes.nosqldb.master.id}]: |-
+        rm -rf /usr/share/opensearch/data/*;
+        sed -ci -e '/^discovery.type: single-node/d' ${globals.oSearchConfig};
+        sed -ci -e 's/opensearch-master/node${nodes.nosqldb.master.id}/g' ${globals.oSearchConfig};
+        echo 'cluster.initial_master_nodes: ["node${nodes.nosqldb.master.id}"]' >> ${globals.oSearchConfig};
+    - startAndWait:
+        nodeId: ${nodes.nosqldb.master.id}
+    - cmd[${nodes.nosqldb.master.id}]: |-
+        jem passwd set -u kibanaserver -p ${globals.oDashPswd}
+        jem passwd set -u logstash -p ${globals.lstashPswd}
+        jem passwd set -p ${globals.oSearchPswd}
+      user: root
+    - if ('${settings.is_logstash}' == 'true'):
+      - setLogstashPassword
+      - cmd[lstash]: |-
+          sed -ci -e 's/hosts => .*/hosts =>  ["${nodes.nosqldb.master.address}"]/g' ${globals.lstashPipelineConfig};
+      - api[lstash]: environment.control.RestartNodesByGroup
+    - forEach(osnode:nodes.nosqldb):
+      - if (${@osnode.id} != ${nodes.nosqldb.master.id}):
+         addNodeToCluster:
+           nodeId: ${@osnode.id}
+           nodeAddress: ${@osnode.address}
+    - if ('${settings.is_opensearchdashboards}' == 'true'):
+      - setCapabilities
+      - setKibanaserverPassword
+      - addOSearchNodesToOSearchDashboard
+      - api[odash]: environment.control.RestartNodesByGroup
+    - cmd[${nodes.nosqldb.master.id}]: sed -ci -e '/^cluster.initial_master_nodes/d' ${globals.oSearchConfig};
+    
+  addNodeToCluster:
+    - cmd[${this.nodeId}]: |-
+        sudo service opensearch stop;
+        rm -rf /usr/share/opensearch/data/*;
+        sed -ci -e '/^discovery.type.*single-node/d' ${globals.oSearchConfig};
+        sed -ci -e 's/node.name:.*/node.name: node${this.nodeId}/g' ${globals.oSearchConfig};
+      user: root
+    - cmd[nosqldb]: |-
+        sed -ci -e 's/discovery.seed_hosts: \[/discovery.seed_hosts: \[\"${this.nodeAddress}\",/' ${globals.oSearchConfig};
+    - startAndWait:
+        nodeId: ${this.nodeId}
+    - if ('${settings.is_logstash}' == 'true'):
+      - cmd[lstash]: |-
+          sed -ci -e 's/hosts =>  \[/hosts =>  \[\"${this.nodeAddress}\",/' ${globals.lstashPipelineConfig};
+          
+  removeNodeFromCluster:
+    - cmd[nosqldb]: |-
+        sed -ci -e 's/[,]*"${this.nodeAddress}"[,]*//' ${globals.oSearchConfig}; sed -ci -e 's/""/","/' ${globals.oSearchConfig};
+        
+  setOpensearchHostname:
+    - cmd[odash]: |-
+        sed -ci -e 's/^opensearch.hosts.*/opensearch.hosts:/' ${globals.oSearchDashConfig};        
+        sed -ci -e '/^opensearch.hosts/ a\  - https://${this.nodeAddress}:9200' ${globals.oSearchDashConfig};
+      user: root
+      
+  setKibanaserverPassword:
+    - cmd[odash]: |-
+        sed -ci -e '/^opensearch.password/d' ${globals.oSearchDashConfig};
+        echo 'opensearch.password: "${globals.oDashPswd}"' >> ${globals.oSearchDashConfig};
+      user: root
+      
+  setLogstashPassword:
+    - cmd[lstash]: |-
+        sed -ci -e 's/password => ".*"/password => "${globals.lstashPswd}"/' ${globals.lstashPipelineConfig};
+      user: root
+      
+  setCapabilities:
+    - cmd[odash]: |-
+        setcap 'cap_net_bind_service=+epi' /usr/share/opensearch-dashboards/bin/opensearch-dashboards
+        setcap 'cap_net_bind_service=+epi' /usr/share/opensearch-dashboards/bin/opensearch-dashboards-plugin
+        setcap 'cap_net_bind_service=+epi' /usr/share/opensearch-dashboards/bin/opensearch-dashboards-keystore
+        setcap 'cap_net_bind_service=+epi' /usr/share/opensearch-dashboards/node/bin/node
+      user: root
+      
+  addOSearchNodesToOSearchDashboard:
+    - forEach(osnode:nodes.nosqldb):
+        setOpensearchHostname:
+          nodeAddress: ${@osnode.address}
+  
+  fixClusterAfterCloneOrMigration:
+    - cmd[nosqldb]: |-
+        sed -ci -e 's/^discovery.seed_hosts:.*/discovery.seed_hosts: ["${nodes.nosqldb.master.address}"]/g' ${globals.oSearchConfig};
+      user: root
+    - forEach(osnode:nodes.nosqldb):
+      - cmd[nosqldb]: |-
+          sed -ci -e 's/node.name:.*/node.name: node${@osnode.id}/g' ${globals.oSearchConfig};
+        user: root
+        sayYes: false
+      - if (${@osnode.id} != ${nodes.nosqldb.master.id}):
+        - cmd[nosqldb]: |-
+            sed -ci -e 's/discovery.seed_hosts: \[/discovery.seed_hosts: \[\"${@osnode.address}\",/' ${globals.oSearchConfig};
+          user: root
+    - api[nosqldb]: environment.control.RestartNodesByGroup
+    - setOpensearchHostname
+    
+  reAddNodeToCluster:
+    - forEach(osnode:nodes.nosqldb):
+      - if (${@osnode.id} == ${nodes.nosqldb.master.id}):
+        - cmd[${this.nodeId}]: |-
+            sudo service opensearch stop;
+            rm -rf /usr/share/opensearch/data/*;
+            sed -ci -e '/^discovery.type: single-node/d' ${globals.oSearchConfig};
+            sed -ci -e 's/opensearch-master/node${this.nodeId}/g' ${globals.oSearchConfig};
+            sed -ci -e 's/^discovery.seed_hosts:.*/discovery.seed_hosts: ["${nodes.nosqldb.first.address}"]/g' ${globals.oSearchConfig};
+      - else:
+        - cmd[${this.nodeId}]: |-
+            sed -ci -e 's/discovery.seed_hosts: \[/discovery.seed_hosts: \[\"${@osnode.address}\",/' ${globals.oSearchConfig};
+    - api[nosqldb]: environment.control.RestartNodesByGroup
+    
+  startAndWait:
+    - cmd[${this.nodeId}]: |-
+        sudo service opensearch start;
+        retries=15; while [ $retries -gt 0 ]; do [[ $(curl -k -s -w "%{http_code}" https://localhost:9200/ -o /dev/null) != "401" ]] || break; sleep 10; let retries=${retries}-1; done
+      user: root

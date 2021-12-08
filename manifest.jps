@@ -1,0 +1,16 @@
+type: install
+version: '1.9.1'
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main
+name: OpenSearch Cluster
+id: opensearch-dashboard
+logo: /images/opensearch-logo.png
+  
+description: 
+  text:  OpenSearch stack with OpenSearch Dashboards and Logstash
+  short: OpenSearch stack
+      
+nodes:
+  - nodeType: opensearch
+    nodeGroup: nosqldb
+    count: 1
+    cloudlets: 8

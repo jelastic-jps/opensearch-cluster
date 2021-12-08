@@ -1,0 +1,101 @@
+{
+  "convertable": false,
+  "jps": "https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/auto-clustering/auto-cluster.jps",
+  "description" : "<h3>Scalable OpenSearch cluster with optional OpenSearch Dashboards and Kibana nodes</h3>Scalable clustered full-text search solution with the possibility to add the OpenSearch Dashboards for data vizualization and Logstash for processing logs.",
+  "defaultState": true,
+  "required": true,
+  "nodeGroupData": {
+    "displayName": "OpenSearch",
+    "skipNodeEmails": true,
+    "scalingMode": "STATEFUL",
+    "isDeploySupport": false,
+    "fixedCloudlets": 8,
+    "flexibleCloudlets": 10,
+    "isResetServicePassword": "NODEGROUP",
+    "isRedeploySupport": "NODEGROUP",
+    "diskLimit": "100G"
+  },
+  "settings": {
+    "data": {
+      "is_opensearchdashboards": true
+    },
+    "fields": [
+      {
+        "type": "toggle",
+        "caption": "Add OpenSearch dashboards",
+        "name": "is_opensearchdashboards",
+        "value": true
+      },
+      {
+        "type": "toggle",
+        "caption": "Add Logstash",
+        "name": "is_logstash",
+        "value": false
+      }
+    ]
+  },
+  "validation": {
+    "scalingMode": "STATEFUL",
+    "rules": [
+      {
+        "is_opensearchdashboards": {
+          "true": {
+            "setGlobals": {
+              "opensearchdashboardsCount": 1
+            }
+          }
+        }
+      },
+      {
+        "is_logstash": {
+          "true": {
+            "setGlobals": {
+              "logstashCount": 1
+            }
+          }
+        }
+      }
+    ]
+  },
+  "recommended": {
+    "cloudlets": 12
+  },
+  "requires": [
+    "opensearchdashboards", "logstash"
+  ],
+  "skipOnEnvInstall": true,
+  "extraNodes": [{
+    "nodeGroup": "odash",
+    "nodeType": "opensearchdashboards",
+    "fixedCloudlets": 4,
+    "flexibleCloudlets": 8,
+    "displayName": "OpenSearch Dashboards",
+    "count": "${globals.opensearchdashboardsCount:0}",
+    "isClusterSupport": false,
+    "isDeploySupport": false,
+    "isClusterDependency": false,
+    "applyQuotas": true,
+    "validation": {
+      "minCount": 1,
+      "maxCount": 1
+    }
+  },
+  {
+    "nodeGroup": "lstash",
+    "nodeType": "logstash",
+    "fixedCloudlets": 4,
+    "flexibleCloudlets": 8,
+    "displayName": "Logstash",
+    "count": "${globals.logstashCount:0}",
+    "isClusterSupport": false,
+    "isDeploySupport": false,
+    "isClusterDependency": false,
+    "scalingMode": "STATEFUL",
+    "applyQuotas": true,
+    "diskLimit": "100G",
+    "validation": {
+      "minCount": 1,
+      "scalingMode": "STATEFUL"
+    }
+  }]
+}
