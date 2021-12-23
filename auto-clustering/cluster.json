@@ -93,6 +93,7 @@
     "scalingMode": "STATEFUL",
     "applyQuotas": true,
     "diskLimit": "100G",
+    "startServiceOnCreation": false,
     "validation": {
       "minCount": 1,
       "scalingMode": "STATEFUL"
