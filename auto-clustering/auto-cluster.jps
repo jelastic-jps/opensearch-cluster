@@ -35,6 +35,7 @@ onInstall:
       
 onAfterServiceScaleOut[lstash]:
   - setLogstashPassword
+  - enableLogstashService
   
 onAfterRedeployContainer[lstash]:
   - if (!${event.params.useExistingVolumes:true}):
@@ -118,6 +119,7 @@ actions:
       - cmd[lstash]: |-
           sed -ci -e 's/hosts => .*/hosts =>  ["${nodes.nosqldb.master.address}"]/g' ${globals.lstashPipelineConfig};
       - api[lstash]: environment.control.RestartNodesByGroup
+      - enableLogstashService
     - forEach(osnode:nodes.nosqldb):
       - if (${@osnode.id} != ${nodes.nosqldb.master.id}):
          addNodeToCluster:
@@ -233,6 +235,11 @@ actions:
     - cmd[${this.nodeId}]: |-
         sudo service opensearch start;
         retries=15; while [ $retries -gt 0 ]; do [[ $(curl -k -s -w "%{http_code}" https://localhost:9200/ -o /dev/null) != "401" ]] || break; sleep 10; let retries=${retries}-1; done
+      user: root
+      
+  enableLogstashService:
+    - cmd[lstash]: |-
+        systemctl enable logstash.service
       user: root
       
   reInstallClusteringLogic:
