@@ -51,7 +51,7 @@ onAfterRedeployContainer[odash]:
 onAfterRedeployContainer[nosqldb]:
   - setGlobals:
       initialized: "false"
-  - if (!${event.params.useExistingVolumes:true}):
+  - if ('${event.params.useExistingVolumes}' == 'true'):
       - if (nodes.nosqldb.length == 1): clusterInit
       - else:
         - forEach(osnode:nodes.nosqldb):
