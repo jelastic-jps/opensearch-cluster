@@ -67,7 +67,16 @@ onAfterRedeployContainer[nosqldb]:
             - if (${response.out} == false):
                 - reAddNodeToCluster:
                     nodeId: ${@osnode.id}
-  - else: reInstallClusteringLogic
+  - else:
+      - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
+      - install: ${response.jps}
+        envName: ${event.params.env}
+        skipNodeEmails: true
+        settings:
+          nodeGroup: ${settings.nodeGroup}
+          is_opensearchdashboards: ${settings.is_opensearchdashboards}
+          is_logstash: ${settings.is_logstash}
+          success_email: ${settings.success_email}
 
 onAfterMigrate:
   - fixClusterAfterCloneOrMigration
