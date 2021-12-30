@@ -67,7 +67,7 @@ onAfterRedeployContainer[nosqldb]:
             - if (${response.out} == false):
                 - reAddNodeToCluster:
                     nodeId: ${@osnode.id}
-        - else: reInstallClusteringLogic
+  - else: reInstallClusteringLogic
 
 onAfterMigrate:
   - fixClusterAfterCloneOrMigration
