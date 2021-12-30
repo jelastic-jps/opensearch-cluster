@@ -92,8 +92,8 @@ onBeforeScaleIn[nosqldb]:
         - api[odash]: environment.control.RestartNodesByGroup
     - if ('${settings.is_logstash}' == 'true'):
         - cmd[lstash]: |-
-            sed -ci -e 's/[,]*"${@osnode.address}"[,]*//' ${globals.lstashPipelineConfig}; 
-            sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig}; 
+            sed -ci -e 's/[,]*"${@osnode.address}"[,]*//' ${globals.lstashPipelineConfig};
+            sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig};
         - api[lstash]: environment.control.RestartNodesByGroup
 - api[nosqldb]: environment.control.RestartNodesByGroup
 
