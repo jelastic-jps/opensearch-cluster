@@ -18,6 +18,7 @@ globals:
   oSearchPswd: ${fn.password}
   oDashPswd: ${fn.password}
   lstashPswd: ${fn.password}
+  intPswd: ${fn.password}
   oSearchConfig: /etc/opensearch/opensearch.yml
   oSearchDashConfig: /etc/opensearch-dashboards/opensearch_dashboards.yml
   lstashPipelineConfig: /etc/logstash/conf.d/logstash-sample.conf
@@ -74,9 +75,16 @@ onBeforeScaleIn[nosqldb]:
             sed -ci -e 's/[,]*"${@osnode.address}"[,]*//' ${globals.lstashPipelineConfig};
             sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig};
         - api[lstash]: environment.control.RestartNodesByGroup
-    - cmd[nosqldb]: sudo service opensearch stop;
-    - startAndWait:
-        nodeId: ${nodes.nosqldb.join(id,)}
+    - cmd[${nodes.nosqldb.master.id}]: |-
+        curl -X POST "https://localhost:9200/_cluster/voting_config_exclusions?node_names=node${@osnode.id}&pretty" -u 'internal:${globals.intPswd}' --insecure
+        
+onAfterScaleIn[nosqldb]:
+  - cmd[nosqldb]: |-
+      sudo service opensearch stop;
+  - startAndWait:
+      nodeId: ${nodes.nosqldb.join(id,)}
+  - cmd[${nodes.nosqldb.master.id}]:
+      curl -X DELETE "https://localhost:9200/_cluster/voting_config_exclusions" -u 'internal:${globals.intPswd}' --insecure
 
 actions:
   clusterInit:
@@ -93,6 +101,7 @@ actions:
     - cmd[${nodes.nosqldb.master.id}]: |-
         jem passwd set -u kibanaserver -p ${globals.oDashPswd}
         jem passwd set -u logstash -p ${globals.lstashPswd}
+        jem passwd set -u internal -p ${globals.intPswd}
         jem passwd set -p ${globals.oSearchPswd}
       user: root
     - if ('${settings.is_logstash}' == 'true'):
