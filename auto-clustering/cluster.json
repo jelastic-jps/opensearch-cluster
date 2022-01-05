@@ -22,13 +22,13 @@
     "fields": [
       {
         "type": "toggle",
-        "caption": "Add OpenSearch dashboards",
+        "caption": "OpenSearch Dashboards",
         "name": "is_opensearchdashboards",
         "value": true
       },
       {
         "type": "toggle",
-        "caption": "Add Logstash",
+        "caption": "Logstash",
         "name": "is_logstash",
         "value": false
       }
