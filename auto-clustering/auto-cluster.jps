@@ -213,7 +213,7 @@ actions:
     - forEach(osnode:nodes.nosqldb):
       - if (${@osnode.id} != ${nodes.nosqldb.master.id}):
         - cmd[lstash]: |-
-            sed -ci -e 's/hosts =>  \[/hosts =>  \[\"${this.nodeAddress}\",/' ${globals.lstashPipelineConfig};
+            sed -ci -e 's/hosts =>  \[/hosts =>  \[\"${@osnode.address}\",/' ${globals.lstashPipelineConfig};
     - api[lstash]: environment.control.RestartNodesByGroup
 
   updateOpensearchDashboardsConfig:
