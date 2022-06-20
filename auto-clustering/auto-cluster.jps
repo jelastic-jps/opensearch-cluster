@@ -222,9 +222,15 @@ actions:
     - api[odash]: environment.control.RestartNodesByGroup
     
   startAndWait:
-    - cmd[${this.nodeId}]: |-
+     - cmd[${this.nodeId}]: |-
         sudo service opensearch start;
-        retries=15; while [ $retries -gt 0 ]; do [[ $(curl -k -s -w "%{http_code}" https://localhost:9200/ -o /dev/null) != "401" ]] || break; sleep 10; let retries=${retries}-1; done
+        retries=20;
+        while [ $retries -gt 0 ]
+        do 
+            [[ $(curl -k -s -w "%{http_code}" https://localhost:9200/ -o /dev/null) != "401" ]] || break;
+            sleep 10;
+            let retries=${retries}-1;
+        done
       user: root
       
   enableLogstashService:
