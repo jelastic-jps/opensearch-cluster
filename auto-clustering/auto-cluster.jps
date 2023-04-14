@@ -22,6 +22,7 @@ globals:
   oSearchConfig: /etc/opensearch/opensearch.yml
   oSearchDashConfig: /etc/opensearch-dashboards/opensearch_dashboards.yml
   lstashPipelineConfig: /etc/logstash/conf.d/logstash-sample.conf
+  protocol: https
   
 onInstall:
   - if (${settings.clone:false}): 
@@ -63,28 +64,30 @@ onAfterServiceScaleOut[nosqldb]:
 - api[nosqldb]: environment.control.RestartNodesByGroup
 
 onBeforeScaleIn[nosqldb]:
-- forEach(osnode:event.response.nodes):
-    - removeNodeFromCluster:
-        nodeAddress: ${@osnode.address}
-    - if ('${settings.is_opensearchdashboards}' == 'true'):
-        - cmd[odash]: |-
-            sed -ci -e '/- https:\/\/${@osnode.address}:9200/d' ${globals.oSearchDashConfig}
-        - api[odash]: environment.control.RestartNodesByGroup
-    - if ('${settings.is_logstash}' == 'true'):
-        - cmd[lstash]: |-
-            sed -ci -e 's/[,]*"${@osnode.address}"[,]*//' ${globals.lstashPipelineConfig};
-            sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig};
-        - api[lstash]: environment.control.RestartNodesByGroup
-    - cmd[${nodes.nosqldb.master.id}]: |-
-        curl -X POST "https://localhost:9200/_cluster/voting_config_exclusions?node_names=node${@osnode.id}&pretty" -u 'internal:${globals.intPswd}' --insecure
+  - detectProtocol 
+  - forEach(osnode:event.response.nodes):
+      - removeNodeFromCluster:
+          nodeAddress: ${@osnode.address}
+      - if ('${settings.is_opensearchdashboards}' == 'true'):
+          - cmd[odash]: |-
+              sed -ci -e '/- \(http\|https\):\/\/${@osnode.address}:9200/d' ${globals.oSearchDashConfig}
+          - api[odash]: environment.control.RestartNodesByGroup
+      - if ('${settings.is_logstash}' == 'true'):
+          - cmd[lstash]: |-
+              sed -ci -e 's/[,]*"${@osnode.address}"[,]*//' ${globals.lstashPipelineConfig};
+              sed -ci -e 's/""/","/' ${globals.lstashPipelineConfig};
+          - api[lstash]: environment.control.RestartNodesByGroup
+      - cmd[${nodes.nosqldb.master.id}]: |-
+          curl -X POST "${globals.protocol}://localhost:9200/_cluster/voting_config_exclusions?node_names=node${@osnode.id}&pretty" -u 'internal:${globals.intPswd}' --insecure
         
 onAfterScaleIn[nosqldb]:
+  - detectProtocol
   - cmd[nosqldb]: |-
       sudo service opensearch stop;
   - startAndWait:
       nodeId: ${nodes.nosqldb.join(id,)}
   - cmd[${nodes.nosqldb.master.id}]:
-      curl -X DELETE "https://localhost:9200/_cluster/voting_config_exclusions" -u 'internal:${globals.intPswd}' --insecure
+      curl -X DELETE "${globals.protocol}://localhost:9200/_cluster/voting_config_exclusions" -u 'internal:${globals.intPswd}' --insecure
 
 actions:
   clusterInit:
@@ -142,9 +145,10 @@ actions:
         sed -ci -e 's/[,]*"${this.nodeAddress}"[,]*//' ${globals.oSearchConfig}; sed -ci -e 's/""/","/' ${globals.oSearchConfig};
         
   setOpensearchHostname:
+    - detectProtocol
     - cmd[odash]: |-
         sed -ci -e 's/^opensearch.hosts.*/opensearch.hosts:/' ${globals.oSearchDashConfig};        
-        grep -q '^[[:space:]]*- https://${this.nodeAddress}:9200' ${globals.oSearchDashConfig} || sed -ci -e '/^opensearch.hosts/ a\  - https://${this.nodeAddress}:9200' ${globals.oSearchDashConfig};
+        grep -q '^[[:space:]]*- \(http\|https\)://${this.nodeAddress}:9200' ${globals.oSearchDashConfig} || sed -ci -e '/^opensearch.hosts/ a\  - ${globals.protocol}://${this.nodeAddress}:9200' ${globals.oSearchDashConfig};
       user: root
       
   setKibanaserverPassword:
@@ -188,7 +192,7 @@ actions:
     - if ('${settings.is_logstash}' == 'true'):
       - reAddOSNodesToLogstash
     - if ('${settings.is_opensearchdashboards}' == 'true'):
-      - cmd[odash]: sed -ci -e '/^[[:space:]]*- https:\/\/.*:9200/d' ${globals.oSearchDashConfig}
+      - cmd[odash]: sed -ci -e '/^[[:space:]]*-[[:space:]]*\(http\|https\):\/\/.*:9200/d' ${globals.oSearchDashConfig}
       - forEach(osnode:nodes.nosqldb):
           setOpensearchHostname:
             nodeAddress: ${@osnode.address}
@@ -208,6 +212,11 @@ actions:
     - api[nosqldb]: environment.control.RestartNodesByGroup
     
   reAddOSNodesToLogstash:
+    - detectProtocol
+    - if ('${globals.protocol}' == 'https'):
+        - cmd[lstash]: sed -ci -e 's/ssl^[[:space:]]*=>^[[:space:]]*\(false\|true\)/ssl^[[:space:]]*=>^[[:space:]]*true/' ${globals.lstashPipelineConfig};
+    - else:
+        - cmd[lstash]: sed -ci -e 's/ssl^[[:space:]]*=>^[[:space:]]*\(false\|true\)/ssl^[[:space:]]*=>^[[:space:]]*false/' ${globals.lstashPipelineConfig};
     - cmd[lstash]: |-
         sed -ci -e 's/hosts => .*/hosts =>  ["${nodes.nosqldb.master.address}"]/g' ${globals.lstashPipelineConfig};
     - forEach(osnode:nodes.nosqldb):
@@ -222,15 +231,21 @@ actions:
     - api[odash]: environment.control.RestartNodesByGroup
     
   startAndWait:
+    - detectProtocol
     - cmd[${this.nodeId}]: |-
         sudo service opensearch start;
-        retries=20; while [ $retries -gt 0 ]; do [[ $(curl -k -s -w "%{http_code}" https://localhost:9200/ -o /dev/null) != "401" ]] || break; sleep 10; let retries=${retries}-1; done
+        retries=20; while [ $retries -gt 0 ]; do [[ $(curl -k -s -w "%{http_code}" ${globals.protocol}://localhost:9200/ -o /dev/null) != "401" ]] || break; sleep 10; let retries=${retries}-1; done
       user: root
       
   enableLogstashService:
     - cmd[lstash]: |-
         systemctl enable logstash.service
       user: root
+
+  detectProtocol:
+    - cmd[${nodes.nosqldb.master.id}]: grep -q '[[:space:]]*plugins.security.ssl.http.enabled:[[:space:]]*true' /etc/opensearch/opensearch.yml && echo 'https' || echo 'http'
+    - setGlobals: 
+        protocol: ${response.out}
       
   reInstallClusteringLogic:
     - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
