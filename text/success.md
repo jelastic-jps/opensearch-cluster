@@ -1,3 +1,3 @@
-**Admin Panel**: [${nodes.nosqldb.master.url}:4848](${nodes.nosqldb.master.url}:4848)  
+**Admin Panel**: [${globals.protocol}://node${nodes.nosqldb.master.id}-${env.domain}:${globals.osport}](${globals.protocol}://node${nodes.nosqldb.master.id}-${env.domain}:${globals.osport})  
 **User**: admin  
 **Password**: ${globals.oSearchPswd}
