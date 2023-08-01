@@ -251,7 +251,12 @@ actions:
     - cmd[${nodes.nosqldb.master.id}]: grep -q '[[:space:]]*plugins.security.ssl.http.enabled:[[:space:]]*true' /etc/opensearch/opensearch.yml && echo 'https' || echo 'http'
     - setGlobals: 
         protocol: ${response.out}
-      
+
+  detectOSPort:
+    - cmd[${nodes.nosqldb.master.id}]: grep -q '[[:space:]]*plugins.security.ssl.http.enabled:[[:space:]]*true' /etc/opensearch/opensearch.yml && echo '4848' || echo '4949'
+    - setGlobals: 
+        osport: ${response.out}
+
   reInstallClusteringLogic:
     - script: delete MANIFEST.id; return {result:0, jps:MANIFEST};
     - install: ${response.jps}
