@@ -108,6 +108,8 @@ actions:
         jem passwd set -u internal -p ${globals.intPswd}
         jem passwd set -p ${globals.oSearchPswd}
       user: root
+    - detectProtocol
+    - detectOSPort
     - if ('${settings.is_logstash}' == 'true'):
       - setLogstashProtocol
       - setLogstashPassword
