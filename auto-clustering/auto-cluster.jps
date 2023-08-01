@@ -214,9 +214,9 @@ actions:
   reAddOSNodesToLogstash:
     - detectProtocol
     - if ('${globals.protocol}' == 'https'):
-        - cmd[lstash]: sed -ci -e 's/ssl[[:space:]]*=>[[:space:]]*\(false\|true\)/ssl^[[:space:]]*=>^[[:space:]]*true/' ${globals.lstashPipelineConfig};
+        - cmd[lstash]: sed -ci -e 's/ssl[[:space:]]*=>[[:space:]]*\(false\|true\)/ssl => true/' ${globals.lstashPipelineConfig};
     - else:
-        - cmd[lstash]: sed -ci -e 's/ssl[[:space:]]*=>[[:space:]]*\(false\|true\)/ssl^[[:space:]]*=>^[[:space:]]*false/' ${globals.lstashPipelineConfig};
+        - cmd[lstash]: sed -ci -e 's/ssl[[:space:]]*=>[[:space:]]*\(false\|true\)/ssl => false/' ${globals.lstashPipelineConfig};
     - cmd[lstash]: |-
         sed -ci -e 's/hosts => .*/hosts =>  ["${nodes.nosqldb.master.address}"]/g' ${globals.lstashPipelineConfig};
     - forEach(osnode:nodes.nosqldb):
