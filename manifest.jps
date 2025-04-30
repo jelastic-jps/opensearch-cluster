@@ -7,7 +7,7 @@ logo: /images/opensearch-logo.png
   
 description: 
   text:  Automatic clusterization of the OpenSearch solution that provides a scalable cluster for the distributed, multitenant-capable full-text search engine with the possibility to add the OpenSearch Dashboards for data visualization and Logstash for processing logs.
-  short: Scalable OpenSearch Cluster
+  short: OpenSearch Cluster is a scalable search engine with optional OpenSearch Dashboards and Logstash components.
 
 onBeforeInit: /scripts/quotascheck.js
 
