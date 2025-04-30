@@ -1,3 +1,7 @@
+<p align="center"> 
+<img src="images/opensearch-logo.png" alt="OpenSearch">
+</p>
+
 # OpenSearch Cluster
 
 The **[OpenSearch Cluster](https://opensearch.org/)** is a community-driven, open-source search engine. It is most suitable for application search or log analytics cases, as it enables people to easily search, aggregate, view, and analyze data. OpenSearch provides a secure, high-quality search and analytics suite that can be easily modified and extended with additional functionality.
@@ -7,40 +11,42 @@ The **[OpenSearch Cluster](https://opensearch.org/)** is a community-driven, ope
 
 The OpenSearch cluster consists of the following components:
 
-- **OpenSearch** - a community-driven, open-source search engine (based on the Jelastic _OpenSearch_ certified template) that provides a distributed, multitenant-capable full-text search
-- **OpenSearch Dashboards** (optional) - a stack for visualizing data that is stored inside the _OpenSearch_ nodes
+- **OpenSearch** - a community-driven, open-source search engine (based on the Virtuozzo Application Platform *OpenSearch* certified template) that provides a distributed, multitenant-capable full-text search
+- **OpenSearch Dashboards** (optional) - a stack for visualizing data that is stored inside the *OpenSearch* nodes
 - **Logstash** (optional) - additional node(s) for data processing
-- **Beats** (optional) - separate add-on ([jelastic-jps/beats-jps-addon](https://github.com/jelastic-jps/beats-jps-addon)) for single-purpose data shippers that send data from the client nodes to _Logstash_ or _OpenSearch_
+- **Beats** (optional) - separate add-on ([jelastic-jps/beats-jps-addon](https://github.com/jelastic-jps/beats-jps-addon)) for single-purpose data shippers that send data from the client nodes to *Logstash* or *OpenSearch*
 
 <p align="center"> <img src="images/01-opensearch-cluster-scheme.png" alt="OpenSearch cluster scheme"> </p>
 
-## Deployment to the Cloud
 
-Click the **Deploy to Jelastic** button below, specify your email address within the widget, choose one of the [Jelastic Public Cloud](https://jelastic.cloud/) providers and click **Install**.
+## Deployment to Cloud
 
-[![deploy button](https://raw.githubusercontent.com/jelastic-jps/common/main/images/deploy-to-cloud.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/manifest.jps)
+To get your OpenSearch cluster solution, click the "**Deploy to Cloud**" button below, specify your email address within the widget, choose one of the [Virtuozzo Public Cloud Providers](https://www.virtuozzo.com/application-platform-partners/), and confirm by clicking **Install**.
 
-> **Note:** If you are already registered at Jelastic, you can deploy this cluster from the [topology wizard](https://docs.jelastic.com/setting-up-environment/) by selecting the **OpenSearch** stack at the _NoSQL database_ section:
->
-> <p align="center"> <img src="images/03-opensearch-in-topology-wizard.png" alt="OpenSearch in topology wizard"> </p>
+[![deploy button](https://raw.githubusercontent.com/jelastic-jps/common/main/images/deploy-to-cloud.png)](https://www.virtuozzo.com/install/?manifest=https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/manifest.jps)
+
+> If you already have a Virtuozzo Application Platform (VAP) account, you can deploy this solution from the [topology wizard](https://www.virtuozzo.com/application-platform-docs/setting-up-environment/) by selecting the **OpenSearch** stack at the *NoSQL database* section or [import](https://www.virtuozzo.com/application-platform-docs/environment-import/) a manifest file from this repository.
 
 
 ## Installation Process
 
-Before the installation, the package provides a dialog to confirm the OpenSearch cluster creation and provide general environment details.
+In the opened installation window at the VAP dashboard, you can configure the environment settings:
 
-<p align="center"> <img src="images/04-opensearch-cluster-installation.png" alt="OpenSearch cluster installation"> </p>
+- ***OpenSearch Nodes*** - set the number of nodes in the cluster (1-10)
+- ***OpenSearch Dashboards*** - enable to add the *OpenSearch Dashboards* node for data visualization
+- ***Logstash*** - enable to add the *Logstash* node for data processing
+- ***Environment*** - provide the preferred environment name
+- ***Display Name*** - add any [alias](https://www.virtuozzo.com/application-platform-docs/environment-aliases/) for the environment
+- ***Region*** - select the [environment region](https://www.virtuozzo.com/application-platform-docs/choosing-region/) (if several are available on the platform)
 
-Here, you can specify:
+<p align="center"> <img src="images/02-opensearch-deployment-wizard.png" alt="OpenSearch deployment wizard"> </p>
 
-- **_Environment_** - preferred environment name
-- **_Display Name_** - any [alias](https://docs.jelastic.com/environment-aliases/) for the environment (optional)
-- **_Region_** - select the [environment region](https://docs.jelastic.com/environment-regions/) (if several are available on the platform)
+Click **Install** and wait a few minutes for the platform to create and configure your OpenSearch cluster.
 
-Click **Install** and wait a minute for the Jelastic PaaS to create and configure a single-node OpenSearch cluster. After installation, you can scale **_OpenSearch_** instances and add the **OpenSearch Dashboards** and **Logstash** nodes.
+The same can be configured (or adjusted after the installation) from the topology wizard:
 
-<p align="center"> <img src="images/05-opensearch-additional-components.png" alt="OpenSearch additional components"> </p>
+<p align="center"> <img src="images/03-opensearch-topology-wizard.png" alt="OpenSearch topology wizard"> </p>
 
 If needed, **Beats** data shippers can be added via the dedicated add-on.
 
-For more information refer to the **[OpenSearch Cluster](https://docs.jelastic.com/opensearch-cluster/)** documentation.
+For more information refer to the **[OpenSearch Cluster](https://www.virtuozzo.com/application-platform-docs/opensearch-cluster/)** documentation.
