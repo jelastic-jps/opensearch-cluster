@@ -18,7 +18,7 @@ The OpenSearch cluster consists of the following components:
 
 Click the **Deploy to Jelastic** button below, specify your email address within the widget, choose one of the [Jelastic Public Cloud](https://jelastic.cloud/) providers and click **Install**.
 
-[![deploy button](https://jelastic.com/getithosted/button.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/manifest.jps)
+[![deploy button](https://raw.githubusercontent.com/jelastic-jps/common/main/images/deploy-to-cloud.png)](https://jelastic.com/install-application/?manifest=https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/manifest.jps)
 
 > **Note:** If you are already registered at Jelastic, you can deploy this cluster from the [topology wizard](https://docs.jelastic.com/setting-up-environment/) by selecting the **OpenSearch** stack at the _NoSQL database_ section:
 >
