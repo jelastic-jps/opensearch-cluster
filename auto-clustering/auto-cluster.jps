@@ -30,10 +30,16 @@ onInstall:
   - else:
     - clusterInit
     - if ('${settings.success_email}' != 'false'):
-      - return:
-          type: success
-          message: /text/success.md
-          email: /text/success.md
+      - if ('${settings.is_opensearchdashboards}' == 'true'):
+        - return:
+            type: success
+            message: /text/success-dashboard.md
+            email: /text/success-dashboard.md
+      - else:
+        - return:
+            type: success
+            message: /text/success.md
+            email: /text/success.md
       
 onAfterServiceScaleOut[lstash]:
   - setLogstashProtocol
