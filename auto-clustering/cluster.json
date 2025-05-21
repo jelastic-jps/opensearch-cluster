@@ -1,6 +1,6 @@
 {
   "convertable": false,
-  "jps": "https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/auto-clustering/auto-cluster.jps",
+  "jps": "https://raw.githubusercontent.com/dimkadt/opensearch-cluster/main/auto-clustering/auto-cluster.jps",
   "description" : "<h3>Scalable OpenSearch Cluster</h3>Automatic clusterization of the OpenSearch solution that provides a scalable cluster for the distributed, multitenant-capable full-text search engine with the possibility to add the OpenSearch Dashboards for data visualization and Logstash for processing logs.",
   "defaultState": true,
   "required": true,
