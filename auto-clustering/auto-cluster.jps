@@ -4,7 +4,7 @@ name: OpenSearch Stack
 id: opensearch
 logo: /images/logo.png
 
-baseUrl: https://raw.githubusercontent.com/dimkadt/opensearch-cluster/main/
+baseUrl: https://raw.githubusercontent.com/jelastic-jps/opensearch-cluster/main/
 
 targetNodes: none
 nodeGroupAlias:
