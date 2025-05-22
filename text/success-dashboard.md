@@ -4,7 +4,7 @@ Use the following credentials to access the OpenSearch cluster admin panel:
 **Admin name:** admin  
 **Admin password:** ${globals.oSearchPswd}  
 
-**Admin panel URL:** [${globals.protocol}://node${nodes.odash.master.id}-${env.domain}](${globals.protocol}://node${nodes.odash.master.id}-${env.domain})  
+**OpenSearch Dashboard URL:** [${globals.protocol}://node${nodes.odash.master.id}-${env.domain}](${globals.protocol}://node${nodes.odash.master.id}-${env.domain})  
 **Admin name:** admin  
 **Admin password:** ${globals.oSearchPswd}  
 
