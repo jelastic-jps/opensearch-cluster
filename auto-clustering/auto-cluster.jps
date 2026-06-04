@@ -96,7 +96,38 @@ onAfterScaleIn[nosqldb]:
   - cmd[${nodes.nosqldb.master.id}]:
       curl -X DELETE "${globals.protocol}://localhost:9200/_cluster/voting_config_exclusions" -u 'internal:${globals.intPswd}' --insecure
 
+onBeforeResetServicePassword[nosqldb]:
+  -   resetOpenSearchPasswd
+
+onBeforeResetNodePassword[nosqldb]:
+  -   resetOpenSearchPasswd:
+
 actions:
+
+  resetOpenSearchPasswd:
+    - detectProtocol
+    - detectOSPort
+    - script: |-
+        var resp = jelastic.env.control.GetEnvInfo('${env.name}', session);
+        if (resp.result != 0) return resp;
+        var currentEnvDomain = resp.env.domain;
+        resp = api.env.control.ExecCmdById('${env.name}', session, '${nodes.nosqldb.master.id}', toJSON([{ "command": "printf '%s' $(echo $RANDOM | md5sum) | cut -c 1-10", "params":""}]), true);
+        if (resp.result != 0) return resp;
+        var passwd = resp.responses[0].out;
+        resp = api.env.control.ExecCmdById('${env.name}', session, '${nodes.nosqldb.master.id}', toJSON([{ "command": "jem passwd set -p " + passwd, "params":""}]), true);
+        if (resp.result != 0) return resp;
+        var adminUrl = "${globals.protocol}://node${nodes.nosqldb.master.id}-${env.domain}:${globals.osport}";
+        var title = "OpenSearch admin password was successfully reset for ${env.name}",
+            text = "<p>Use the following credentials to access the OpenSearch cluster admin panel:</p>" +
+                "<p><strong>Admin panel URL:</strong> <a href=\"" + adminUrl + "\">" + adminUrl + "</a></p>" +
+                "<p><strong>Admin name:</strong> admin</p>" +
+                "<p><strong>Admin password:</strong> " + passwd + "</p>" +
+                "<p>To add a custom domain name for your OpenSearch installation, follow the steps described in our <a href=\"https://www.virtuozzo.com/application-platform-docs/custom-domains/\">documentation</a>.</p>";
+        return api.message.email.Send(appid, signature, null, '${user.email}', '${user.email}', title, text);
+    - stopEvent:
+        type: success
+        message: OpenSearch admin password changed successfully. 
+
   clusterInit:
     - cmd[nosqldb]: |-
         sudo service opensearch stop;
